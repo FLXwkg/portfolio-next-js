@@ -25,4 +25,4 @@ jobs:
         run: npm run build
 
       - name: Build Docker Image
-        run: docker build -t portfolio-next-js
+        run: docker build -t portfolio-next-js .
