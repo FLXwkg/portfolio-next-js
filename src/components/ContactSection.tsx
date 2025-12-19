@@ -49,7 +49,7 @@ export default function ContactSection() {
                   <div>
                     <p className="text-sm font-medium text-[#d080e0]">Email</p>
                     <a
-                      href="mailto:ewen@example.com"
+                      href="mailto:ewenheas13@gmail.com"
                       className="text-[#666] text-sm hover:text-[#e0a4ed] transition-colors"
                     >
                       ewenheas13@gmail.com
