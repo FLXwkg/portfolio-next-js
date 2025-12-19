@@ -64,7 +64,7 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_SSH_PORT }}
           script: |
-            cd /home/${{ secrets.DEPLOY_USER }}/docker-apps/portfolio-next-js
+            cd /home/${{ secrets.DEPLOY_USER }}/docker-apps/portfolio
             docker compose pull
             docker compose down
             docker compose up -d
