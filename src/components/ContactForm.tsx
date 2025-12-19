@@ -3,7 +3,6 @@
  * Handles form submission, validation, and email sending
  */
 
-"use client";
 
 import { useState } from "react";
 import emailjs from "@emailjs/browser";
