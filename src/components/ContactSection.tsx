@@ -52,7 +52,7 @@ export default function ContactSection() {
                       href="mailto:ewen@example.com"
                       className="text-[#666] text-sm hover:text-[#e0a4ed] transition-colors"
                     >
-                      ewen@example.com
+                      ewenheas13@gmail.com
                     </a>
                   </div>
                 </div>
