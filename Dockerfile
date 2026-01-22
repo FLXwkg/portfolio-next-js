@@ -1,57 +1,52 @@
-# Multi-stage Dockerfile pour Next.js 16
-# Optimisé pour production sur VPS
+FROM node:20-alpine AS base
 
-# Stage 1: Builder
-FROM node:20-alpine AS builder
-
+# Install dependencies only when needed
+FROM base AS deps
+# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copier les fichiers de dépendances
-COPY package.json package-lock.json ./
-
-# Installer les dépendances
+# Install dependencies based on the preferred package manager
+COPY package.json package-lock.json* ./
 RUN npm ci
 
-# Copier le code source
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build l'application Next.js
+# Next.js collects completely anonymous telemetry data about general usage.
+# Learn more here: https://nextjs.org/telemetry
+# Uncomment the following line in case you want to disable telemetry during the build.
+ENV NEXT_TELEMETRY_DISABLED=1
+
 RUN npm run build
 
-# Stage 2: Runtime
-FROM node:20-alpine
-
+# Production image, copy all the files and run next
+FROM base AS runner
 WORKDIR /app
 
-# Installer dumb-init pour une gestion correcte des signaux
-RUN apk add --no-cache dumb-init
-
-# Créer un utilisateur non-root pour la sécurité
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
-
-# Copier les fichiers nécessaires depuis le builder
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
-
-# Définir les variables d'environnement
 ENV NODE_ENV=production
-ENV PORT=3000
+# Uncomment the following line in case you want to disable telemetry during runtime.
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Utiliser l'utilisateur non-root
+# Don't run as root
+RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
+
+COPY --from=builder /app/public ./public
+
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
 USER nextjs
 
-# Exposer le port
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+ENV PORT=3000
+# set hostname to localhost
+ENV HOSTNAME="0.0.0.0"
 
-# Utiliser dumb-init pour démarrer l'application
-ENTRYPOINT ["dumb-init", "--"]
-
-# Lancer l'application
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
